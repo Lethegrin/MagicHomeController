@@ -48,15 +48,16 @@ namespace MagicHomeConsoleApp
             IpAddress = ipAddress;
             MacAddress = macAddress;
             BulbID = bulbID;
-            GetState();
+            //GetState();
 
 
         }
 
         public void GetState()
         {
-            using (UdpClient discovery_client = new UdpClient())
+            try
             {
+                using UdpClient discovery_client = new UdpClient();
                 byte[] getStatusMessage = new byte[] { 0x81, 0x8A, 0x8B, 0x96 };
                 Console.WriteLine("getting status...");
                 byte[] response = transmit.SendMessage(IpAddress, getStatusMessage, false, true);
@@ -87,6 +88,8 @@ namespace MagicHomeConsoleApp
                 IsOn = isOn;
                 IsRGBWW = isRGBWW;
                 IsPersistant = isPersistant;
+            } catch (Exception e)
+            {
 
             }
         }

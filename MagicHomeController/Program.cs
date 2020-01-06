@@ -15,19 +15,55 @@ namespace MagicHomeConsoleApp
 
             Console.WriteLine("call scan");
             Discovery d = new Discovery();
-            var scantask = d.Scan(2000);
-            await scantask;
+            var scantask = d.Scan(2000,3);
 
-            foreach (Bulb bulb in d.bulbList)
-            {
+                await scantask;
 
-                new Thread(() =>
+
+
+            
+             foreach (Bulb bulb in d.bulbList)
+              {
+                try
                 {
-                    bulb.Test();
-                }
-                ).Start();
+                    new Thread(() =>
+                    {
+                        byte red = 255;
+                        byte blue = 0;
+                        bool forward = true;
+                        while (true)
+                        {
+                            if (red >= 255)
+                                forward = false;
+                            else if (red <= 0)
+                                forward = true;
 
-            }
+                            if (forward)
+                            {
+                                red++;
+                                blue--;
+                            }
+                            else
+                            {
+                                red--;
+                                blue++;
+                            }
+
+                            bulb.SetColorAndWhiteLevel(red, 0, blue, red, blue);
+                            Thread.Sleep(25);
+                          // bulb.Test();
+
+
+                      }
+                    }
+                    ).Start();
+
+                } catch { }
+
+
+                    }
+
+
         }
     }
 }

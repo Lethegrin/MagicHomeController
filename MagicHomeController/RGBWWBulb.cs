@@ -9,7 +9,7 @@ namespace MagicHomeConsoleApp
         {
         }
 
-        public override void SetColorAndWhiteLevel(byte r, byte g, byte b, byte w, byte c)
+        public override void SetColorAndWhiteLevel(byte r = 0, byte g = 0, byte b = 0, byte w = 0, byte c = 0)
         {
             Color.Red = r;
             Color.Green = g;

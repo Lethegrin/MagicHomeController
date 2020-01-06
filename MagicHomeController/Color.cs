@@ -11,6 +11,8 @@ namespace MagicHomeConsoleApp
         byte warmWhite = 0;
         byte coldWhite = 0;
 
+
+
         const byte MAX_BYTE_VALUE = 0xFF;
         const byte MIN_BYTE_VALUE = 0x00;
 

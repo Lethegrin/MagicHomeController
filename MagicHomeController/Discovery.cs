@@ -11,25 +11,30 @@ namespace MagicHomeConsoleApp
     public class Discovery
     {
         private const int DISCOVERY_PORT = 48899;
-        public List<Bulb> bulbList = new List<Bulb>();
-        private CancellationTokenSource m_cancelScanSource;
 
-        public async Task Scan(int millisecondsTimeout)
+        Bulb bulb;                                               //generic bulb object
+        public List<Bulb> bulbList = new List<Bulb>();           //list of all bulb objects
+        private CancellationTokenSource m_cancelScanSource;      //cancelation token to cancel our scan method
+
+        public async Task<List<Bulb>> Scan(int millisecondsTimeout = 2000, int retries = 2)
         {
-
-
-            //Create UDP Client for discovery broadcast
-            using (UdpClient discovery_client = new UdpClient())
+            int numBulbs = 0;
+            int numStates = 0;
+            int scanRetries = 0;
+            while (numBulbs <= 0 && retries > scanRetries)
             {
-                //Send magic packet to get controllers to announce themselves
-                IPEndPoint ip = new IPEndPoint(IPAddress.Broadcast, DISCOVERY_PORT);
-                byte[] bytes = Encoding.ASCII.GetBytes("HF-A11ASSISTHREAD");
-                discovery_client.Send(bytes, bytes.Length, ip);
+                Console.WriteLine("Creating UDP client");
+            using UdpClient discovery_client = GetDiscovery_client();             //Create UDP Client for discovery broadcast
+            IPEndPoint ip = new IPEndPoint(IPAddress.Broadcast, DISCOVERY_PORT);
 
-                //Listen for their return packets
-                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, DISCOVERY_PORT);
-                m_cancelScanSource = new CancellationTokenSource(millisecondsTimeout);
-                int numBulbs = 0;
+            byte[] bytes = Encoding.ASCII.GetBytes("HF-A11ASSISTHREAD");    //Encode magic packet
+            Console.WriteLine("sending magic packet");
+            discovery_client.Send(bytes, bytes.Length, ip);                 //Send magic packet to get controllers to announce themselves
+            
+            //Listen for their return packets
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, DISCOVERY_PORT);
+            m_cancelScanSource = new CancellationTokenSource(millisecondsTimeout);
+           
                 while (true)
                 {
                     //Hack in a way to allow a CancellationToken for ReceiveAsync
@@ -38,17 +43,18 @@ namespace MagicHomeConsoleApp
                     var tcs = new TaskCompletionSource<bool>();
                     using (m_cancelScanSource.Token.Register(s => tcs.TrySetResult(true), null))
                     {
+                        Console.WriteLine("if await task...");
                         if (await Task.WhenAny(receive_task, tcs.Task) == receive_task)
                         {
-                            //ReceiveAsync was successful, parse the reply
-                            string message = Encoding.ASCII.GetString(receive_task.Result.Buffer);
+                            Console.WriteLine("receiving message");
+                            string message = Encoding.ASCII.GetString(receive_task.Result.Buffer); //ReceiveAsync was successful, encode the reply into ASCII and parse
                             Console.WriteLine(message);
                             string[] bulb_data = message.Split(',');
 
                             string ipAddress = bulb_data[0];
                             string macAddress = bulb_data[1];
                             string typeID = bulb_data[2];
-                            Bulb bulb;
+
 
                             if (macAddress.Contains("DC4F22E1") || macAddress.Contains("5CCF7FE18"))
                             {
@@ -76,23 +82,34 @@ namespace MagicHomeConsoleApp
                         }
                         else
                         {
+                        
                             Console.WriteLine(numBulbs);
                             //Cancelled (or timed out), close out socket
                             discovery_client.Close();
                             m_cancelScanSource.Dispose();
                             m_cancelScanSource = null;
                             break;
+
                         }
+     
+                        // return bulbList;
                     }
-
                 }
-
+              
             }
+
+            foreach (Bulb bulb in bulbList)
+            {
+                bulb.GetState();
+                numStates++;
+            }
+            Console.WriteLine(numStates);
+            return bulbList;
         }
 
-
-
-
-
+        private static UdpClient GetDiscovery_client()
+        {
+            return new UdpClient();
+        }
     }
 }
