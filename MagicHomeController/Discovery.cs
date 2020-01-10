@@ -5,12 +5,12 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using SimpleWifi;
+
 namespace MagicHomeConsoleApp
 {
     public class Discovery
     {
-        Wifi wifi = new Wifi();
+ 
 
         
         private const int DISCOVERY_PORT = 48899;
