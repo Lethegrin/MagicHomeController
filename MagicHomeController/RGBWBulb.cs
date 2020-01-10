@@ -27,7 +27,7 @@ namespace MagicHomeConsoleApp
 
             CreateBasicMessage(sendMessageByte);
         }
-        public override void SetColorLevel(byte r, byte g, byte b)
+        public override void SetColorLevel(byte r = 0, byte g = 0, byte b = 0)
         {
             Color.Red = r;
             Color.Green = g;
@@ -60,7 +60,24 @@ namespace MagicHomeConsoleApp
             Color.Blue = b;
             Color.WarmWhite = w;
             Color.ColdWhite = c;
-            UpdateStateColor();
+
+            if (r > 0 || g > 0 || b > 0)
+                UpdateStateColor();
+            else
+                UpdateStateWhite();
+        }
+        public override void SetColorAndWhiteLevel(Color color)
+        {
+            Color.Red = color.Red;
+            Color.Green = color.Green;
+            Color.Blue = color.Blue;
+            Color.WarmWhite = color.WarmWhite;
+            Color.ColdWhite = color.ColdWhite;
+            if (color.Red > 0 || color.Green > 0 || color.Blue > 0)
+
+                UpdateStateColor();
+            else
+                UpdateStateWhite();
         }
     }
 }

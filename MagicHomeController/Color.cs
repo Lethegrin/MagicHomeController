@@ -38,7 +38,10 @@ namespace MagicHomeConsoleApp
 
         public byte Red
         {
-            get { return red; }
+            get
+            {
+                return red;
+            }
             set
             {
                 red = Math.Clamp(value, MIN_BYTE_VALUE, MAX_BYTE_VALUE);
@@ -46,7 +49,10 @@ namespace MagicHomeConsoleApp
         }
         public byte Green
         {
-            get { return green; }
+            get
+            {
+                return green;
+            }
             set
             {
                 green = Math.Clamp(value, MIN_BYTE_VALUE, MAX_BYTE_VALUE);
@@ -54,7 +60,10 @@ namespace MagicHomeConsoleApp
         }
         public byte Blue
         {
-            get { return blue; }
+            get
+            {
+                return blue;
+            }
             set
             {
                 blue = Math.Clamp(value, MIN_BYTE_VALUE, MAX_BYTE_VALUE);
@@ -62,7 +71,10 @@ namespace MagicHomeConsoleApp
         }
         public byte WarmWhite
         {
-            get { return warmWhite; }
+            get
+            {
+                return warmWhite;
+            }
             set
             {
                 warmWhite = Math.Clamp(value, MIN_BYTE_VALUE, MAX_BYTE_VALUE);
@@ -70,7 +82,10 @@ namespace MagicHomeConsoleApp
         }
         public byte ColdWhite
         {
-            get { return coldWhite; }
+            get
+            {
+                return coldWhite;
+            }
             set
             {
                 coldWhite = Math.Clamp(value, MIN_BYTE_VALUE, MAX_BYTE_VALUE);

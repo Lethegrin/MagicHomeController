@@ -5,11 +5,14 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using SimpleWifi;
 namespace MagicHomeConsoleApp
 {
     public class Discovery
     {
+        Wifi wifi = new Wifi();
+
+        
         private const int DISCOVERY_PORT = 48899;
 
         Bulb bulb;                                               //generic bulb object
@@ -59,15 +62,23 @@ namespace MagicHomeConsoleApp
                             if (macAddress.Contains("DC4F22E1") || macAddress.Contains("5CCF7FE18"))
                             {
                                 bulb = new RGBWWBulb(ipAddress, macAddress, typeID);
+                                Console.WriteLine("Created a new RGBWW Bulb");
                             }
+                           
                             else if (macAddress.Contains("6001940ED"))
                             {
                                 bulb = new RGBWWStrip(ipAddress, macAddress, typeID);
+                                Console.WriteLine("Created a new RGBWW Strip");
                             }
                             else if (macAddress.Contains("DC4F22") || macAddress.Contains("600194"))
                             {
                                 bulb = new RGBWBulb(ipAddress, macAddress, typeID);
                                 Console.WriteLine("Created a new RGBW Bulb");
+                            }
+                            else if (typeID.Contains("ZJ2101"))
+                            {
+                                bulb = new RGBWWBulb(ipAddress, macAddress, typeID);
+                                Console.WriteLine("Created a new RGBWW Small Bulb");
                             }
                             else
                             {
