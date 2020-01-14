@@ -8,8 +8,6 @@ namespace MagicHomeConsoleApp
     abstract public class Bulb
     {
 
-        private Transmit transmit = new Transmit();
-
         Socket _socket;
         int DefaultPort = 5577;
 
@@ -53,19 +51,16 @@ namespace MagicHomeConsoleApp
             set;
         }
 
-        public byte[] powerOn = 
-            {
-            0x71,
-            0x23,
-            0x0f
-            };
-        byte[] powerOff =
-            {
-            0x71,
-            0x24,
-            0x0f
-            };
-
+        public byte[] powerOn = {
+   0x71,
+   0x23,
+   0x0f
+  };
+        byte[] powerOff = {
+   0x71,
+   0x24,
+   0x0f
+  };
 
 
         public Bulb(string ipAddress, string macAddress, string bulbID)
@@ -74,7 +69,7 @@ namespace MagicHomeConsoleApp
 
             IPEndPoint _endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), DefaultPort);
             _socket = new Socket(_endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            //_socket = new Socket(SocketType.Dgram, ProtocolType.Tcp);
+
             _socket.ReceiveTimeout = 1;
             _socket.SendTimeout = 1;
             _socket.Connect(_endPoint);
@@ -93,15 +88,14 @@ namespace MagicHomeConsoleApp
             try
             {
                 using UdpClient discovery_client = new UdpClient();
-                byte[] getStatusMessage = new byte[] 
-                {
-                 0x81,
-                 0x8A,
-                 0x8B,
-                 0x96
-                };
+                byte[] getStatusMessage = new byte[] {
+     0x81,
+     0x8A,
+     0x8B,
+     0x96
+    };
                 Console.WriteLine("getting status...");
-                byte[] response = transmit.SendMessage(IpAddress, getStatusMessage, false, true);
+                byte[] response = Transmit.SendMessage(IpAddress, getStatusMessage, false, true);
 
                 if (response.Length != 14)
                 {
@@ -120,7 +114,7 @@ namespace MagicHomeConsoleApp
                 byte versionNumber = response[10];
                 byte coldWhite = response[11];
 
-                Console.WriteLine($"IpAddress: {IpAddress} -- red: {red} -- green: {green} -- blue: {blue}");
+                Console.WriteLine($ "IpAddress: {IpAddress} -- red: {red} -- green: {green} -- blue: {blue}");
                 Color = new Color(red, green, blue, warmWhite, coldWhite);
                 bool isOn = (powerState == 0x24 ? true : false);
                 bool isRGBWW = (bulbType == 0x35 ? true : false);
@@ -133,7 +127,7 @@ namespace MagicHomeConsoleApp
             }
             catch (Exception e)
             {
-                Console.WriteLine(e); 
+                Console.WriteLine(e);
             }
         }
 
@@ -150,11 +144,11 @@ namespace MagicHomeConsoleApp
             UpdateStatePower();
         }
 
-       /*public void SetColor(Color color)
-        {
-            Color = new Color(color);
-            UpdateStateColor();
-        }*/
+        /*public void SetColor(Color color)
+         {
+             Color = new Color(color);
+             UpdateStateColor();
+         }*/
 
         public virtual void SetColorLevel(byte r = 0, byte g = 0, byte b = 0)
         {
@@ -225,17 +219,16 @@ namespace MagicHomeConsoleApp
         {
             byte[] sendMessageByte;
 
-            sendMessageByte = new byte[] 
-            {
-            0x31,
-            Math.Clamp(Color.Red,(byte)0,(byte)255), // Red byte
-            Math.Clamp(Color.Green,(byte)0,(byte)255), //3 Green byte
-            Color.Blue, //4 Blue byte
-            Color.WarmWhite, //5 WarmWhite byte
-            Color.ColdWhite, //6 ColdWhite byte
-            mask, //7
-            0x0F //8 terminator (I'll be back)
-           };
+            sendMessageByte = new byte[] {
+    0x31,
+    Math.Clamp(Color.Red, (byte) 0, (byte) 255), // Red byte
+    Math.Clamp(Color.Green, (byte) 0, (byte) 255), //3 Green byte
+    Color.Blue, //4 Blue byte
+    Color.WarmWhite, //5 WarmWhite byte
+    Color.ColdWhite, //6 ColdWhite byte
+    mask, //7
+    0x0F //8 terminator (I'll be back)
+   };
 
             CreateBasicMessage(sendMessageByte);
         }
@@ -282,7 +275,7 @@ namespace MagicHomeConsoleApp
 
             _socket.Send(bytes);
 
-            
+
         }
 
     }

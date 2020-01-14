@@ -14,16 +14,15 @@ namespace MagicHomeConsoleApp
             byte[] sendMessageByte;
 
             // 7 byte message for RGBW bulbs
-            sendMessageByte = new byte[]
-            {
-                0x31,
-                Color.Red, // Red byte
-                Color.Green, //3 Green byte
-                Color.Blue, //4 Blue byte
-                Color.WarmWhite, //5 WarmWhite byte
-                mask, //6 Mask
-                0x0F  //7 terminator (I'll be back)
-            };
+            sendMessageByte = new byte[] {
+    0x31,
+    Color.Red, // Red byte
+    Color.Green, //3 Green byte
+    Color.Blue, //4 Blue byte
+    Color.WarmWhite, //5 WarmWhite byte
+    mask, //6 Mask
+    0x0F //7 terminator (I'll be back)
+   };
 
             CreateBasicMessage(sendMessageByte);
         }
