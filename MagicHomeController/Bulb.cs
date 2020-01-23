@@ -114,7 +114,7 @@ namespace MagicHomeConsoleApp
                 byte versionNumber = response[10];
                 byte coldWhite = response[11];
 
-                Console.WriteLine($ "IpAddress: {IpAddress} -- red: {red} -- green: {green} -- blue: {blue}");
+                Console.WriteLine($"IpAddress: {IpAddress} -- red: {red} -- green: {green} -- blue: {blue}");
                 Color = new Color(red, green, blue, warmWhite, coldWhite);
                 bool isOn = (powerState == 0x24 ? true : false);
                 bool isRGBWW = (bulbType == 0x35 ? true : false);

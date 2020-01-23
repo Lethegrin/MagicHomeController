@@ -4,14 +4,16 @@ using System.Threading;
 using System.Threading.Tasks;
 namespace MagicHomeConsoleApp
 {
-    class Program
+   public class Program
     {
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
 
             Console.WriteLine("call scan");
             Discovery d = new Discovery();
+            Animations a = new Animations();
             var scantask = d.Scan(2000, 4);
+          
 
             try
             {
@@ -21,21 +23,22 @@ namespace MagicHomeConsoleApp
 
             foreach (Bulb bulb in d.bulbList)
             {
+
+                Thread.Sleep(500);
                 try
                 {
 
-                    //if (bulb.IpAddress.Contains("21")) // test only one bulb in the house so I don't annoy my girlfriend
-                    //{
                     new Thread(() => {
                         while (true)
                         {
-                            Animations.ColorWheel(bulb, 50, 1);
+                            var animationTask = Animations.ColorWheel(bulb, 50, 1);
+                           // Animations.ColorWheel(bulb,50,1);
                         }
                     }).Start();
-                //}
+                    //}
                 }
                 catch { }
             }
         }
     }
-}
+} 

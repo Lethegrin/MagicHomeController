@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MagicHomeConsoleApp
 {
-    class Animations
+    public class Animations
     {
 
 
@@ -31,7 +32,7 @@ namespace MagicHomeConsoleApp
 
             bulb.SetColorLevel(0, 0, 0);
             Color firelyColor = new Color(140, 255, 0, 0, 0);
-            int DelayBetweenPulses = RandomNumber(30000, 120000), openDelaySpeed = RandomNumber(20, 50), closeDelaySpeed = RandomNumber(5, 10);
+            int DelayBetweenPulses = RandomNumber(5000, 10000), openDelaySpeed = RandomNumber(20, 50), closeDelaySpeed = RandomNumber(5, 10);
 
 
 
@@ -146,7 +147,7 @@ namespace MagicHomeConsoleApp
             return bulb.Color;
         }
 
-        public static Color ColorWheel(Bulb bulb, int delay, int luminocity)
+        public async static Task<Color> ColorWheel(Bulb bulb, int delay, int luminocity)
         {
 
             Color red = new Color(255, 0, 0, 0, 0);
