@@ -24,27 +24,27 @@ namespace MagicHomeConsoleApp
     0x0F //7 terminator (I'll be back)
    };
 
-            CreateBasicMessage(sendMessageByte);
+            SendMessage(sendMessageByte, true);
         }
-        public override void SetColorLevel(byte r = 0, byte g = 0, byte b = 0)
+        public override void SetColorLevel(byte r = 0, byte g = 0, byte b = 0, bool persistance = false)
         {
             Color.Red = r;
             Color.Green = g;
             Color.Blue = b;
             UpdateStateColor();
         }
-        public override void SetWarmWhiteLevel(byte w)
+        public override void SetWarmWhiteLevel(byte w, bool persistance = false)
         {
             Color.WarmWhite = w;
             UpdateStateWhite();
         }
-        public override void SetColdWhiteLevel(byte c)
+        public override void SetColdWhiteLevel(byte c, bool persistance = false)
         {
             Color.ColdWhite = c;
             Color.WarmWhite = c;
             UpdateStateWhite();
         }
-        public override void SetBothWhiteLevel(byte w, byte c)
+        public override void SetBothWhiteLevel(byte w, byte c, bool persistance = false)
         {
             int intWarmWhiteValue = (int)(w + c) / 2;
             byte byteWarmWhiteValue = (byte)intWarmWhiteValue;
@@ -52,7 +52,7 @@ namespace MagicHomeConsoleApp
             Color.ColdWhite = c;
             UpdateStateWhite();
         }
-        public override void SetColorAndWhiteLevel(byte r = 0, byte g = 0, byte b = 0, byte w = 0, byte c = 0)
+        public override void SetColorAndWhiteLevel(byte r = 0, byte g = 0, byte b = 0, byte w = 0, byte c = 0, bool persistance = false)
         {
             Color.Red = r;
             Color.Green = g;
@@ -65,7 +65,7 @@ namespace MagicHomeConsoleApp
             else
                 UpdateStateWhite();
         }
-        public override void SetColorAndWhiteLevel(Color color)
+        public override void SetColorAndWhiteLevel(Colors color, bool persistance = false)
         {
             Color.Red = color.Red;
             Color.Green = color.Green;

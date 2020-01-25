@@ -23,20 +23,27 @@ namespace MagicHomeConsoleApp
     public class Discovery
     {
 
-        private
-        const int DISCOVERY_PORT = 48899; 
+        private const int DISCOVERY_PORT = 48899; 
         //Port that we listen for bulbs to respond on
 
-        byte[] MAGIC_UDP_PACKET = Encoding.ASCII.GetBytes("HF-A11ASSISTHREAD"); 
+        private byte[] MAGIC_UDP_PACKET = Encoding.ASCII.GetBytes("HF-A11ASSISTHREAD"); 
         //Encode magic UDP packet, causes all bulbs to respond
 
 
-        public List<Bulb> bulbList = new List<Bulb>(); 
+        private List<Bulb> m_discoveredBulbs = new List<Bulb>();
         //list of all bulb objects, bulb class contains state data logic for manipulating bulb color, on/off state etc...
 
-        private CancellationTokenSource m_cancelScanSource; 
+        private CancellationTokenSource m_cancelScanSource;
         //cancelation token to cancel our scan method (Need to look into this, is it like an arduino interrupt?)
 
+            //returns our private list; 
+        public List<Bulb> DiscoveredBulbs
+        {
+            get { return m_discoveredBulbs; }
+        }
+
+        public delegate void BulbDiscoveryHandler(Bulb bulb);
+        public event BulbDiscoveryHandler DiscoveredBulb;
 
         /*Scan
          * Sends out a UDP packet over the network and listens for response
@@ -50,113 +57,96 @@ namespace MagicHomeConsoleApp
          */
         public async Task<List<Bulb>> Scan(int millisecondsTimeout = 2000, int maxRetries = 2)
         {
+            //Delete old bulb list
+            m_discoveredBulbs.Clear();
 
-            using UdpClient discovery_client = new UdpClient();
             //Create UDP Client for discovery broadcast
-
-            IPEndPoint ip = new IPEndPoint(IPAddress.Broadcast, DISCOVERY_PORT);
-            //send to all IPs on network (need to investigate)
-
-
-
-            int scanRetryCount = 0;
-            //instantiate our retry counter
-
-            while (bulbList.Count == 0 || scanRetryCount <= maxRetries)
-            //repeat the scan if we didn't hear back from any bulbs, but only if scanRetryCount doesn't exceed 'maxRetries'
+            using (UdpClient discovery_client = new UdpClient()) 
             {
 
+                //Send magic packet to get controllers to announce themselves
+                IPEndPoint ip = new IPEndPoint(IPAddress.Broadcast, DISCOVERY_PORT);
 
-              
+               
 
+                m_cancelScanSource = new CancellationTokenSource(millisecondsTimeout);
                 Console.WriteLine("sending magic packet");
                 discovery_client.Send(MAGIC_UDP_PACKET, MAGIC_UDP_PACKET.Length, ip); //Send magic packet to get controllers to announce themselves
+                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, DISCOVERY_PORT); //Listen for their return packets
 
-                //Listen for their return packets
-                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, DISCOVERY_PORT);
 
-                //Hack in a way to allow a CancellationToken for ReceiveAsync
-                //Based heavily on https://stackoverflow.com/questions/19404199/how-to-to-make-udpclient-receiveasync-cancelable
-                m_cancelScanSource = new CancellationTokenSource(millisecondsTimeout);
-
-                // repeat until we break, broken by "else" statement which occurs if...
-                // ...(await Task.WhenAny(receive_task, tcs.Task) == receive_task) returns false
-                // probably can clean up but know too little about how this loop works
                 while (true)
                 {
-                    //??? receive the data as a var? Isn't C# strongly typed?
-                    var receive_task = discovery_client.ReceiveAsync();
 
-                    //??? a bool that is set when we have stated that our "task' is completeted?
+                    //Hack in a way to allow a CancellationToken for ReceiveAsync
+                    //Based heavily on https://stackoverflow.com/questions/19404199/how-to-to-make-udpclient-receiveasync-cancelable
+                    var receive_task = discovery_client.ReceiveAsync();
                     var tcs = new TaskCompletionSource<bool>();
 
-                    //??? confused about the using identifier and wrapping curly brackets
-                    using (m_cancelScanSource.Token.Register(s => tcs.TrySetResult(true), null))
-                    {
-                        //if the cancellation token isn't true continue, else break the loop
-                        if (await Task.WhenAny(receive_task, tcs.Task) == receive_task) 
+                        //??? confused about the using identifier and wrapping curly brackets
+                        using (m_cancelScanSource.Token.Register(s => tcs.TrySetResult(true), null))
                         {
-                            Console.WriteLine("received message");
+                            //if the cancellation token isn't true continue, else break the loop
+                            if (await Task.WhenAny(receive_task, tcs.Task) == receive_task)
+                            {
 
-                            //ReceiveAsync was successful, encode the reply into ASCII and parse
-                            string message = Encoding.ASCII.GetString(receive_task.Result.Buffer); 
+                                //ReceiveAsync was successful, encode the reply into ASCII and parse
+                                string message = Encoding.ASCII.GetString(receive_task.Result.Buffer);
 
-                            Console.WriteLine(message);
+                                Console.WriteLine(message);
 
-                            //When encoded to ASCII and converted to a string, data arrives in this pattern:
-                            // 'ipaddress,macaddress,typeid'
-                            // for example "192.168.1.21,6001940ED006,ZJ2101"
+                                //When encoded to ASCII and converted to a string, data arrives in this pattern:
+                                // 'ipaddress,macaddress,typeid'
+                                // for example "192.168.1.21,6001940ED006,ZJ2101"
 
-                            // split the data and save to variables
-                            string[] bulb_data = message.Split(',');
-                            string ipAddress = bulb_data[0];
-                            string macAddress = bulb_data[1];
-                            string typeID = bulb_data[2];
+                                // split the data and save to variables
+                                string[] bulb_data = message.Split(',');
+                                string ipAddress = bulb_data[0];
+                                string macAddress = bulb_data[1];
+                                string typeID = bulb_data[2];
 
-                            //instantiate a bulb object in "BulbsFactory" Class. Could just as easily be a...
-                            //BulbsFactory method.
-                            var bulb = BulbsFactory.CreateBulb(ipAddress, macAddress, typeID);
+                                //instantiate a bulb object in "BulbsFactory" Class. Could just as easily be a...
+                                //BulbsFactory method.
+                                var bulb = BulbsFactory.CreateBulb(ipAddress, macAddress, typeID);
 
-                            // If BulbsFactory can't figure out what the bulb type is, it will set to null
-                            // We dont add null bulbs to our list of Bulb objects. So we 'continue',
-                            // skipping bulbList.Add(bulb);
-                            if (bulb == null) continue; 
+                                // If BulbsFactory can't figure out what the bulb type is, it will set to null
+                                // We dont add null bulbs to our list of Bulb objects. So we 'continue',
+                                // skipping bulbList.Add(bulb);
+                                if (bulb == null) continue;
 
-                            //add our newly created Bulb object to a list so that we may access it later
-                            bulbList.Add(bulb);
+                                //add our newly created Bulb object to a list so that we may access it later
+                                m_discoveredBulbs.Add(bulb);
+                                DiscoveredBulb?.Invoke(bulb);
                         }
-                        else //Cancelled (or timed out), close out socket
-                        {
+                            else //Cancelled (or timed out), close out socket
+                            {
 
-                            Console.WriteLine(bulbList.Count);
+                                Console.WriteLine(m_discoveredBulbs.Count);
+                              
 
-                            //increase the retry count in case we found 0 bulbs(functional???)
-                            //If the bulbs have been polled with the "HF-A11ASSISTHREAD" magic packet...
-                            //...recently they will be slow to react. Need to create a c# Dictionary so I can...
-                            //... run the scan multiple times without creating duplicates and ensuring I find them all...
-                            //(gotta catch'em all, pokeman)
-                            scanRetryCount++;
+                                //close our port so it doesn't timeout causing errors
+                                discovery_client.Close();
 
-                            //close our port so it doesn't timeout causing errors
-                            discovery_client.Close();
+                                //??? destroy our cancelationsource
+                                m_cancelScanSource.Dispose();
+                                //??? set our cancelationsource to null. This may be why scanRetry isn't working
+                                m_cancelScanSource = null;
 
-                            //??? destroy our cancelationsource
-                            m_cancelScanSource.Dispose();
-                            //??? set our cancelationsource to null. This may be why scanRetry isn't working
-                            m_cancelScanSource = null;
+                                //break out of the first  'while (true)' loop as we have no more bulbs to add
+                                break;
 
-                            //break out of the first  'while (true)' loop as we have no more bulbs to add
-                            break;
+                            }
 
                         }
-
                     }
-                }
-
+                
             }
-            return bulbList;
+            return m_discoveredBulbs;
         }
-
+        public void CancelScan()
+        {
+            m_cancelScanSource?.Cancel();
+        }
     }
     /*
      * BulbsFactory Class

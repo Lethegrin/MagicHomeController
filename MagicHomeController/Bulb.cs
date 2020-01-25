@@ -5,11 +5,33 @@ using System.Threading;
 
 namespace MagicHomeConsoleApp
 {
-    abstract public class Bulb
+    abstract public class Bulb : IDisposable
     {
 
-        Socket _socket;
-        int DefaultPort = 5577;
+        private static byte COLOR_ONLY_WRITEMASK = 0xF0;
+        private static byte WHITE_ONLY_WRITEMASK = 0x0F;
+        private static byte COLOR_AND_WHITE_WRITEMASK = 0x00;
+
+        private static readonly byte[] NEW_QUERY_MSG = { 0x81, 0x8a, 0x8b, 0x96 };
+        private static readonly byte[] OLD_QUERY_MSG = { 0xef, 0x01, 0x77 };
+
+        private static readonly byte[] OLD_ON_MSG = { 0xcc, 0x23, 0x33 };
+        private static readonly byte[] NEW_ON_MSG = { 0x71, 0x23, 0x0f };
+
+        private static readonly byte[] OLD_OFF_MSG = { 0xcc, 0x24, 0x33 };
+        private static readonly byte[] NEW_OFF_MSG = { 0x71, 0x24, 0x0f };
+
+        private static readonly byte[] GET_CLOCK_MSG = { 0x11, 0x1a, 0x1b, 0x0f };
+        private static readonly byte[] GET_TIMERS_MSG = { 0x22, 0x2a, 0x2b, 0x0f };
+
+
+        private const int WIFI_PORT = 5577;
+        Socket m_socket;
+
+        private IPAddress m_ipAddress;
+
+        private int m_timeout = 5000;
+        private int m_queryLen;
 
         public string IpAddress
         {
@@ -27,7 +49,7 @@ namespace MagicHomeConsoleApp
             set;
         }
 
-        public Color Color
+        public Colors Color
         {
             get;
             set;
@@ -51,56 +73,66 @@ namespace MagicHomeConsoleApp
             set;
         }
 
-        public byte[] powerOn = {
+        private byte GetPersistance()
+        {
+            byte persistanceByte = (IsPersistant == true ? (byte)0x31 : (byte)0x41);
+            return persistanceByte;
+        }
+
+        private byte[] powerOn = {
    0x71,
    0x23,
    0x0f
   };
-        byte[] powerOff = {
+       private byte[] powerOff = {
    0x71,
    0x24,
    0x0f
   };
 
 
-        public Bulb(string ipAddress, string macAddress, string bulbID)
+        public Bulb(string ipAddress, string macAddress, string bulbID) 
         {
-
-
-            IPEndPoint _endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), DefaultPort);
-            _socket = new Socket(_endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
-            _socket.ReceiveTimeout = 1;
-            _socket.SendTimeout = 1;
-            _socket.Connect(_endPoint);
+       
+            m_queryLen = 14;
+            m_ipAddress = IPAddress.Parse(ipAddress);
+            m_socket = new Socket(m_ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
             IpAddress = ipAddress;
             MacAddress = macAddress;
             TypeID = bulbID;
-            Color = new Color();
-            GetState();
-
-
+            Color = new Colors();
+            if (!m_socket.Connected)
+                Connect();
         }
 
-        public void GetState()
+        public void Connect()
         {
-            try
+            if (m_socket.Connected)
             {
-                using UdpClient discovery_client = new UdpClient();
-                byte[] getStatusMessage = new byte[] {
-     0x81,
-     0x8A,
-     0x8B,
-     0x96
-    };
-                Console.WriteLine("getting status...");
-                byte[] response = Transmit.SendMessage(IpAddress, getStatusMessage, false, true);
+                m_socket.Close();
+                m_socket = new Socket(m_ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            }
 
-                if (response.Length != 14)
+            m_socket.Connect(m_ipAddress, WIFI_PORT);
+        }
+
+        public void GetState(int retries = 2)
+        {
+            if (!m_socket.Connected)
+                Connect();
+            byte[] response = QueryState(retries);
+         
+        
+                Console.WriteLine("getting status...");
+
+                if (response == null) 
                 {
-                    throw new Exception("Controller sent wrong number of bytes while getting status");
-                }
+                return;
+                } else if (response.Length != 14)
+            {
+                return;
+            }
 
                 byte persistance = response[0];
                 byte bulbType = response[1];
@@ -114,22 +146,47 @@ namespace MagicHomeConsoleApp
                 byte versionNumber = response[10];
                 byte coldWhite = response[11];
 
-                Console.WriteLine($"IpAddress: {IpAddress} -- red: {red} -- green: {green} -- blue: {blue}");
-                Color = new Color(red, green, blue, warmWhite, coldWhite);
+
+            Color.Red = red;
+            Color.Green = green;
+            Color.Blue = blue;
+            Color.WarmWhite = warmWhite;
+            Color.ColdWhite = red;
+
+            Console.WriteLine($"The current state of IpAddress: {IpAddress} -- red: {red} -- green: {green} -- blue: {blue}");
+               
                 bool isOn = (powerState == 0x24 ? true : false);
                 bool isRGBWW = (bulbType == 0x35 ? true : false);
                 bool isPersistant = (persistance == 0x31 ? true : false);
 
-                //Color = new Color(color);
                 IsOn = isOn;
                 IsRGBWW = isRGBWW;
                 IsPersistant = isPersistant;
-            }
-            catch (Exception e)
+            
+
+        }
+
+        private byte[] QueryState(int retries)
+        {
+
+            try
             {
-                Console.WriteLine(e);
+                if (!m_socket.Connected)
+                    Connect();
+                SendMessage(NEW_QUERY_MSG,false);
+                return ReadMsg(m_queryLen);
+            }
+            catch (SocketException)
+            {
+                if (retries < 1)
+                {
+                    IsOn = false;
+                    return null;
+                }
+                return QueryState(retries - 1);
             }
         }
+
 
         public void TurnOn()
         {
@@ -144,13 +201,7 @@ namespace MagicHomeConsoleApp
             UpdateStatePower();
         }
 
-        /*public void SetColor(Color color)
-         {
-             Color = new Color(color);
-             UpdateStateColor();
-         }*/
-
-        public virtual void SetColorLevel(byte r = 0, byte g = 0, byte b = 0)
+        public virtual void SetColorLevel(byte r = 0, byte g = 0, byte b = 0, bool persistance = false)
         {
             Color.Red = r;
             Color.Green = g;
@@ -158,26 +209,26 @@ namespace MagicHomeConsoleApp
             UpdateStateColor();
         }
 
-        public virtual void SetWarmWhiteLevel(byte w)
+        public virtual void SetWarmWhiteLevel(byte w, bool persistance = false)
         {
             Color.WarmWhite = w;
             UpdateStateWhite();
         }
 
-        public virtual void SetColdWhiteLevel(byte c)
+        public virtual void SetColdWhiteLevel(byte c, bool persistance = false)
         {
             Color.ColdWhite = c;
             UpdateStateWhite();
         }
 
-        public virtual void SetBothWhiteLevel(byte w, byte c)
+        public virtual void SetBothWhiteLevel(byte w, byte c, bool persistance = false)
         {
             Color.WarmWhite = w;
             Color.ColdWhite = c;
             UpdateStateWhite();
         }
 
-        public virtual void SetColorAndWhiteLevel(byte r, byte g, byte b, byte w, byte c)
+        public virtual void SetColorAndWhiteLevel(byte r, byte g, byte b, byte w, byte c, bool persistance = false)
         {
             Color.Red = r;
             Color.Green = g;
@@ -187,7 +238,7 @@ namespace MagicHomeConsoleApp
             UpdateStateColorAndWhite();
         }
 
-        public virtual void SetColorAndWhiteLevel(Color color)
+        public virtual void SetColorAndWhiteLevel(Colors color, bool persistance = false)
         {
             Color.Red = color.Red;
             Color.Green = color.Green;
@@ -199,20 +250,20 @@ namespace MagicHomeConsoleApp
 
         private void UpdateStatePower()
         {
-            CreateBasicMessage((IsOn == true ? powerOn : powerOff));
+            SendMessage((IsOn == true ? powerOn : powerOff),false);
         }
 
         public void UpdateStateColor()
         {
-            CreateColorMessage(0xF0); // sets only color channels to change
+            CreateColorMessage(COLOR_ONLY_WRITEMASK); // sets only color channels to change
         }
         public void UpdateStateWhite()
         {
-            CreateColorMessage(0x0F); // sets only white channels to change
+            CreateColorMessage(WHITE_ONLY_WRITEMASK); // sets only white channels to change
         }
         public void UpdateStateColorAndWhite()
         {
-            CreateColorMessage(0xFF);
+            CreateColorMessage(COLOR_AND_WHITE_WRITEMASK);
         }
 
         public virtual void CreateColorMessage(byte mask)
@@ -220,7 +271,7 @@ namespace MagicHomeConsoleApp
             byte[] sendMessageByte;
 
             sendMessageByte = new byte[] {
-    0x31,
+    GetPersistance(), //peristance byte set by bulb.IsPerstant Perameter
     Math.Clamp(Color.Red, (byte) 0, (byte) 255), // Red byte
     Math.Clamp(Color.Green, (byte) 0, (byte) 255), //3 Green byte
     Color.Blue, //4 Blue byte
@@ -230,21 +281,17 @@ namespace MagicHomeConsoleApp
     0x0F //8 terminator (I'll be back)
    };
 
-            CreateBasicMessage(sendMessageByte);
+            SendMessage(sendMessageByte, true);
         }
 
-        public void CreateBasicMessage(byte[] message)
+
+        private byte[] ReadMsg(int expected)
         {
-
-            try
-            {
-                SendMessage(IpAddress, message, true);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e + " exception found for ip address: " + IpAddress);
-            }
-
+            byte[] buffer = new byte[expected];
+            m_socket.ReceiveTimeout = m_timeout;
+            int bytes_read = m_socket.Receive(buffer);
+            Array.Resize(ref buffer, bytes_read);
+            return buffer;
         }
 
         public byte CalculateChecksum(byte[] bytes)
@@ -262,7 +309,7 @@ namespace MagicHomeConsoleApp
             return checksum;
         }
 
-        public void SendMessage(string ipAddress, byte[] bytes, bool sendChecksum)
+        public void SendMessage(byte[] bytes, bool sendChecksum)
         {
 
 
@@ -273,10 +320,18 @@ namespace MagicHomeConsoleApp
                 bytes[bytes.Length - 1] = checksum;
             }
 
-            _socket.Send(bytes);
+            m_socket.Send(bytes);
 
 
         }
 
+        public void Dispose()
+        {
+            if (m_socket.Connected)
+            {
+                m_socket.Close();
+            }
+            m_socket.Dispose();
+        }
     }
 }

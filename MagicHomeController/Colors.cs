@@ -3,7 +3,7 @@
 namespace MagicHomeConsoleApp
 {
 
-    public class Color
+    public class Colors
     {
         byte red = 0;
         byte green = 0;
@@ -11,12 +11,10 @@ namespace MagicHomeConsoleApp
         byte warmWhite = 0;
         byte coldWhite = 0;
 
-
-
         const byte MAX_BYTE_VALUE = 0xFF;
         const byte MIN_BYTE_VALUE = 0x00;
 
-        public Color(byte red = 0, byte green = 0, byte blue = 0, byte warmWhite = 0, byte coldWhite = 0)
+        public Colors(byte red = 0, byte green = 0, byte blue = 0, byte warmWhite = 0, byte coldWhite = 0)
         {
             Red = red;
             Green = green;
@@ -26,13 +24,13 @@ namespace MagicHomeConsoleApp
 
         }
 
-        public Color(Color color)
+        public Colors(Colors colors)
         {
-            Red = color.Red;
-            Green = color.Green;
-            Blue = color.Blue;
-            WarmWhite = color.WarmWhite;
-            ColdWhite = color.ColdWhite;
+            Red = colors.Red;
+            Green = colors.Green;
+            Blue = colors.Blue;
+            WarmWhite = colors.WarmWhite;
+            ColdWhite = colors.ColdWhite;
         }
 
 
@@ -94,5 +92,4 @@ namespace MagicHomeConsoleApp
     }
 
 
-
-}
+    }

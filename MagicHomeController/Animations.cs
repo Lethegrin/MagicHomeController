@@ -31,7 +31,7 @@ namespace MagicHomeConsoleApp
         {
 
             bulb.SetColorLevel(0, 0, 0);
-            Color firelyColor = new Color(140, 255, 0, 0, 0);
+            Colors firelyColor = new Colors(140, 255, 0, 0, 0);
             int DelayBetweenPulses = RandomNumber(5000, 10000), openDelaySpeed = RandomNumber(20, 50), closeDelaySpeed = RandomNumber(5, 10);
 
 
@@ -49,8 +49,8 @@ namespace MagicHomeConsoleApp
         {
 
             bulb.SetColorAndWhiteLevel(0, 0, 0, 0, 0);
-            Color randomBlue = new Color(RandomNumber((byte)0, (byte)20), RandomNumber((byte)0, (byte)255), RandomNumber((byte)50, (byte)255), 0, 0);
-            Color randomPink = new Color(255, 0, RandomNumber((byte)5, (byte)220), 0, 0);
+            Colors randomBlue = new Colors(RandomNumber((byte)0, (byte)20), RandomNumber((byte)0, (byte)255), RandomNumber((byte)50, (byte)255), 0, 0);
+            Colors randomPink = new Colors(255, 0, RandomNumber((byte)5, (byte)220), 0, 0);
             int DelayBetweenPulses = RandomNumber(1000, 5000), openDelaySpeed = RandomNumber(10, 20), closeDelaySpeed = RandomNumber(1, 10);
 
 
@@ -83,9 +83,9 @@ namespace MagicHomeConsoleApp
 
             Thread.Sleep(delayBetweenPulses);
 
-            Color randomBlue = new Color(RandomNumber((byte)0, (byte)20), RandomNumber((byte)0, (byte)255), RandomNumber((byte)50, (byte)255), 0, 0);
-            Color randomPink = new Color(255, 0, RandomNumber((byte)5, (byte)220), 0, 0);
-            Color transitionColor;
+            Colors randomBlue = new Colors(RandomNumber((byte)0, (byte)20), RandomNumber((byte)0, (byte)255), RandomNumber((byte)50, (byte)255), 0, 0);
+            Colors randomPink = new Colors(255, 0, RandomNumber((byte)5, (byte)220), 0, 0);
+            Colors transitionColor;
 
 
 
@@ -112,9 +112,9 @@ namespace MagicHomeConsoleApp
 
         }
 
-        public static Color ColorTransition(Bulb bulb, Color openColor, Color closeColor, int delay, double luminocity)
+        public static Colors ColorTransition(Bulb bulb, Colors openColor, Colors closeColor, int delay, double luminocity)
         {
-            Color currentColor = new Color();
+            Colors currentColor = new Colors();
             double currentRatio = 0;
 
             while (true)
@@ -133,7 +133,7 @@ namespace MagicHomeConsoleApp
                 if (currentRatio < 1)
                 {
                     bulb.SetColorAndWhiteLevel(SetLuminocity(currentColor, LuminocityClamp(luminocity)));
-                    currentRatio = Math.Clamp(currentRatio + .01, 0.0, 1.0);
+                    currentRatio = Math.Clamp(currentRatio + .001, 0.0, 1.0);
                 }
                 else
                 {
@@ -147,12 +147,12 @@ namespace MagicHomeConsoleApp
             return bulb.Color;
         }
 
-        public async static Task<Color> ColorWheel(Bulb bulb, int delay, int luminocity)
+        public static Colors ColorWheel(Bulb bulb, int delay, int luminocity)
         {
 
-            Color red = new Color(255, 0, 0, 0, 0);
-            Color green = new Color(0, 255, 0, 0, 0);
-            Color blue = new Color(0, 0, 255, 0, 0);
+            Colors red = new Colors(255, 0, 0, 0, 0);
+            Colors green = new Colors(0, 255, 0, 0, 0);
+            Colors blue = new Colors(0, 0, 255, 0, 0);
 
             Animations.ColorTransition(bulb, red, blue, delay, luminocity);
             Animations.ColorTransition(bulb, blue, green, delay, luminocity);
@@ -163,7 +163,7 @@ namespace MagicHomeConsoleApp
         }
 
 
-        public static Color Flash(Bulb bulb, Color color, int delay, double startLuminocity, double endLuminocity)
+        public static Colors Flash(Bulb bulb, Colors color, int delay, double startLuminocity, double endLuminocity)
         {
             startLuminocity = Math.Clamp(startLuminocity, 0.0, 1.0);
             endLuminocity = Math.Clamp(endLuminocity, 0.0, 1.0);
@@ -196,9 +196,9 @@ namespace MagicHomeConsoleApp
 
         }
 
-        public static Color SetLuminocity(Color color, double luminocity)
+        public static Colors SetLuminocity(Colors color, double luminocity)
         {
-            Color newColor = new Color((byte)(color.Red * luminocity),
+            Colors newColor = new Colors((byte)(color.Red * luminocity),
              (byte)(color.Green * luminocity),
              (byte)(color.Blue * luminocity),
              (byte)(color.WarmWhite * luminocity),

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,9 +12,7 @@ namespace MagicHomeConsoleApp
 
             Console.WriteLine("call scan");
             Discovery d = new Discovery();
-            Animations a = new Animations();
             var scantask = d.Scan(2000, 4);
-          
 
             try
             {
@@ -21,21 +20,30 @@ namespace MagicHomeConsoleApp
             }
             catch { }
 
-            foreach (Bulb bulb in d.bulbList)
+            IReadOnlyList<Bulb> readOnlyList = await scantask;
+            foreach (var bulb in readOnlyList)
             {
 
-                Thread.Sleep(500);
                 try
                 {
 
+                      new Thread(() => {
+                          while (true)
+                          {
+                              bulb.GetState();
+                              Thread.Sleep(1000);
+                      }
+                      }).Start();
+                     
                     new Thread(() => {
-                        while (true)
-                        {
-                            var animationTask = Animations.ColorWheel(bulb, 50, 1);
-                           // Animations.ColorWheel(bulb,50,1);
-                        }
-                    }).Start();
-                    //}
+                      while (true)
+                      {
+                    Animations.ColorWheel(bulb,500,1);
+
+                      }
+
+                }).Start();
+            
                 }
                 catch { }
             }

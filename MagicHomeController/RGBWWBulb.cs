@@ -7,7 +7,7 @@ namespace MagicHomeConsoleApp
     {
         public RGBWWBulb(string ipAddress, string macAddress, string bulbID) : base(ipAddress, macAddress, bulbID) { }
 
-        public override void SetColorAndWhiteLevel(byte r = 0, byte g = 0, byte b = 0, byte w = 0, byte c = 0)
+        public override void SetColorAndWhiteLevel(byte r = 0, byte g = 0, byte b = 0, byte w = 0, byte c = 0, bool persistance = false)
         {
             Color.Red = r;
             Color.Green = g;
@@ -21,7 +21,7 @@ namespace MagicHomeConsoleApp
                 UpdateStateWhite();
         }
 
-        public override void SetColorAndWhiteLevel(Color color)
+        public override void SetColorAndWhiteLevel(Colors color, bool persistance = false)
         {
             Color.Red = color.Red;
             Color.Green = color.Green;
