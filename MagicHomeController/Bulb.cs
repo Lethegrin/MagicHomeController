@@ -3,9 +3,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
-namespace MagicHomeConsoleApp
+namespace MagicHomeController
 {
-    abstract public class Bulb : IDisposable
+    abstract public class Bulb
     {
 
         private static byte COLOR_ONLY_WRITEMASK = 0xF0;
@@ -24,14 +24,13 @@ namespace MagicHomeConsoleApp
         private static readonly byte[] GET_CLOCK_MSG = { 0x11, 0x1a, 0x1b, 0x0f };
         private static readonly byte[] GET_TIMERS_MSG = { 0x22, 0x2a, 0x2b, 0x0f };
 
+       public byte tempRed = 0;
+        public byte tempGreen = 0;
+        public byte tempBlue = 0;
 
-        private const int WIFI_PORT = 5577;
-        Socket m_socket;
 
-        private IPAddress m_ipAddress;
-
-        private int m_timeout = 5000;
-        private int m_queryLen;
+        private Connection sendConnection;
+        private Connection receiveConnection;
 
         public string IpAddress
         {
@@ -49,7 +48,7 @@ namespace MagicHomeConsoleApp
             set;
         }
 
-        public Colors Color
+        public Colors Colors
         {
             get;
             set;
@@ -72,6 +71,8 @@ namespace MagicHomeConsoleApp
             get;
             set;
         }
+        internal Connection SendConnection { get => sendConnection; set => sendConnection = value; }
+        internal Connection ReceiveConnection { get => receiveConnection; set => receiveConnection = value; }
 
         private byte GetPersistance()
         {
@@ -93,45 +94,29 @@ namespace MagicHomeConsoleApp
 
         public Bulb(string ipAddress, string macAddress, string bulbID) 
         {
-       
-            m_queryLen = 14;
-            m_ipAddress = IPAddress.Parse(ipAddress);
-            m_socket = new Socket(m_ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+ 
 
             IpAddress = ipAddress;
             MacAddress = macAddress;
             TypeID = bulbID;
-            Color = new Colors();
-            if (!m_socket.Connected)
-                Connect();
+            Colors = new Colors();
+
         }
 
-        public void Connect()
+        public bool GetState(int retries = 5)
         {
-            if (m_socket.Connected)
-            {
-                m_socket.Close();
-                m_socket = new Socket(m_ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            }
 
-            m_socket.Connect(m_ipAddress, WIFI_PORT);
-        }
-
-        public void GetState(int retries = 2)
-        {
-            if (!m_socket.Connected)
-                Connect();
-            byte[] response = QueryState(retries);
-         
-        
-                Console.WriteLine("getting status...");
+            byte[] response = receiveConnection.QueryState(retries);
+       
 
                 if (response == null) 
                 {
-                return;
+                Console.WriteLine("Returned Null");
+                return false;
                 } else if (response.Length != 14)
             {
-                return;
+                Console.WriteLine("Incorrect response length");
+                return false;
             }
 
                 byte persistance = response[0];
@@ -145,15 +130,17 @@ namespace MagicHomeConsoleApp
                 byte warmWhite = response[9];
                 byte versionNumber = response[10];
                 byte coldWhite = response[11];
+            tempRed = response[6];
+            tempGreen = response[7];
+            tempBlue = response[8];
 
+            Colors.Red = red;
+            Colors.Green = green;
+            Colors.Blue = blue;
+            Colors.WarmWhite = warmWhite;
+            Colors.ColdWhite = coldWhite;
 
-            Color.Red = red;
-            Color.Green = green;
-            Color.Blue = blue;
-            Color.WarmWhite = warmWhite;
-            Color.ColdWhite = red;
-
-            Console.WriteLine($"The current state of IpAddress: {IpAddress} -- red: {red} -- green: {green} -- blue: {blue}");
+        //    Console.WriteLine($"The current state of IpAddress: {IpAddress} -- red: {red} -- green: {green} -- blue: {blue}");
                
                 bool isOn = (powerState == 0x24 ? true : false);
                 bool isRGBWW = (bulbType == 0x35 ? true : false);
@@ -162,31 +149,9 @@ namespace MagicHomeConsoleApp
                 IsOn = isOn;
                 IsRGBWW = isRGBWW;
                 IsPersistant = isPersistant;
-            
 
+            return true;
         }
-
-        private byte[] QueryState(int retries)
-        {
-
-            try
-            {
-                if (!m_socket.Connected)
-                    Connect();
-                SendMessage(NEW_QUERY_MSG,false);
-                return ReadMsg(m_queryLen);
-            }
-            catch (SocketException)
-            {
-                if (retries < 1)
-                {
-                    IsOn = false;
-                    return null;
-                }
-                return QueryState(retries - 1);
-            }
-        }
-
 
         public void TurnOn()
         {
@@ -203,54 +168,54 @@ namespace MagicHomeConsoleApp
 
         public virtual void SetColorLevel(byte r = 0, byte g = 0, byte b = 0, bool persistance = false)
         {
-            Color.Red = r;
-            Color.Green = g;
-            Color.Blue = b;
+            Colors.Red = r;
+            Colors.Green = g;
+            Colors.Blue = b;
             UpdateStateColor();
         }
 
         public virtual void SetWarmWhiteLevel(byte w, bool persistance = false)
         {
-            Color.WarmWhite = w;
+            Colors.WarmWhite = w;
             UpdateStateWhite();
         }
 
         public virtual void SetColdWhiteLevel(byte c, bool persistance = false)
         {
-            Color.ColdWhite = c;
+            Colors.ColdWhite = c;
             UpdateStateWhite();
         }
 
         public virtual void SetBothWhiteLevel(byte w, byte c, bool persistance = false)
         {
-            Color.WarmWhite = w;
-            Color.ColdWhite = c;
+            Colors.WarmWhite = w;
+            Colors.ColdWhite = c;
             UpdateStateWhite();
         }
 
         public virtual void SetColorAndWhiteLevel(byte r, byte g, byte b, byte w, byte c, bool persistance = false)
         {
-            Color.Red = r;
-            Color.Green = g;
-            Color.Blue = b;
-            Color.WarmWhite = w;
-            Color.ColdWhite = c;
+            Colors.Red = r;
+            Colors.Green = g;
+            Colors.Blue = b;
+            Colors.WarmWhite = w;
+            Colors.ColdWhite = c;
             UpdateStateColorAndWhite();
         }
 
         public virtual void SetColorAndWhiteLevel(Colors color, bool persistance = false)
         {
-            Color.Red = color.Red;
-            Color.Green = color.Green;
-            Color.Blue = color.Blue;
-            Color.WarmWhite = color.WarmWhite;
-            Color.ColdWhite = color.ColdWhite;
+            Colors.Red = color.Red;
+            Colors.Green = color.Green;
+            Colors.Blue = color.Blue;
+            Colors.WarmWhite = color.WarmWhite;
+            Colors.ColdWhite = color.ColdWhite;
             UpdateStateColorAndWhite();
         }
 
-        private void UpdateStatePower()
+        public void UpdateStatePower()
         {
-            SendMessage((IsOn == true ? powerOn : powerOff),false);
+            sendConnection.SendMessage((IsOn == true ? powerOn : powerOff),false);
         }
 
         public void UpdateStateColor()
@@ -272,66 +237,25 @@ namespace MagicHomeConsoleApp
 
             sendMessageByte = new byte[] {
     GetPersistance(), //peristance byte set by bulb.IsPerstant Perameter
-    Math.Clamp(Color.Red, (byte) 0, (byte) 255), // Red byte
-    Math.Clamp(Color.Green, (byte) 0, (byte) 255), //3 Green byte
-    Color.Blue, //4 Blue byte
-    Color.WarmWhite, //5 WarmWhite byte
-    Color.ColdWhite, //6 ColdWhite byte
+    Colors.Red, // Red byte
+    Colors.Green, //3 Green byte
+    Colors.Blue, //4 Blue byte
+    Colors.WarmWhite, //5 WarmWhite byte
+    Colors.ColdWhite, //6 ColdWhite byte
     mask, //7
     0x0F //8 terminator (I'll be back)
    };
 
-            SendMessage(sendMessageByte, true);
+            sendConnection.SendMessage(sendMessageByte, true);
         }
 
-
-        private byte[] ReadMsg(int expected)
+        public virtual void OpenConnections()
         {
-            byte[] buffer = new byte[expected];
-            m_socket.ReceiveTimeout = m_timeout;
-            int bytes_read = m_socket.Receive(buffer);
-            Array.Resize(ref buffer, bytes_read);
-            return buffer;
+            receiveConnection = new Connection(this);
+            sendConnection = new Connection(this);
         }
 
-        public byte CalculateChecksum(byte[] bytes)
-        {
-            byte checksum = 0;
-
-            foreach (var b in bytes)
-            {
-                unchecked
-                {
-                    checksum += b;
-                }
-            }
-
-            return checksum;
-        }
-
-        public void SendMessage(byte[] bytes, bool sendChecksum)
-        {
 
 
-            if (sendChecksum)
-            {
-                var checksum = CalculateChecksum(bytes);
-                Array.Resize(ref bytes, bytes.Length + 1);
-                bytes[bytes.Length - 1] = checksum;
-            }
-
-            m_socket.Send(bytes);
-
-
-        }
-
-        public void Dispose()
-        {
-            if (m_socket.Connected)
-            {
-                m_socket.Close();
-            }
-            m_socket.Dispose();
-        }
     }
 }

@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MagicHomeConsoleApp
+namespace MagicHomeController
 {
     public class Animations
     {
@@ -73,7 +73,7 @@ namespace MagicHomeConsoleApp
 
         }
 
-        public static void FlyingLantern(Bulb bulb, double luminocity)
+        public static void FlyingLantern(Bulb bulb, double luminocity, double resolution)
         {
             bulb.SetColorLevel(0, 0, 0);
             int openDelaySpeed = RandomNumber(100, 200),
@@ -96,7 +96,7 @@ namespace MagicHomeConsoleApp
             else
                 transitionColor = randomBlue;
 
-            ColorTransition(bulb, bulb.Color, transitionColor, openDelaySpeed, luminocity);
+            ColorTransition(bulb, bulb.Colors, transitionColor, openDelaySpeed, resolution, luminocity);
 
             for (int i = 0; i < twinkles; i++)
             {
@@ -112,7 +112,7 @@ namespace MagicHomeConsoleApp
 
         }
 
-        public static Colors ColorTransition(Bulb bulb, Colors openColor, Colors closeColor, int delay, double luminocity)
+        public static Colors ColorTransition(Bulb bulb, Colors openColor, Colors closeColor, int delay, double resolution, double luminocity)
         {
             Colors currentColor = new Colors();
             double currentRatio = 0;
@@ -133,7 +133,7 @@ namespace MagicHomeConsoleApp
                 if (currentRatio < 1)
                 {
                     bulb.SetColorAndWhiteLevel(SetLuminocity(currentColor, LuminocityClamp(luminocity)));
-                    currentRatio = Math.Clamp(currentRatio + .001, 0.0, 1.0);
+                    currentRatio = Math.Clamp(currentRatio + resolution, 0.0, 1.0);
                 }
                 else
                 {
@@ -144,21 +144,21 @@ namespace MagicHomeConsoleApp
 
             }
 
-            return bulb.Color;
+            return bulb.Colors;
         }
 
-        public static Colors ColorWheel(Bulb bulb, int delay, int luminocity)
+        public static Colors ColorWheel(Bulb bulb, int delay, double resolution, double luminocity)
         {
 
             Colors red = new Colors(255, 0, 0, 0, 0);
             Colors green = new Colors(0, 255, 0, 0, 0);
             Colors blue = new Colors(0, 0, 255, 0, 0);
 
-            Animations.ColorTransition(bulb, red, blue, delay, luminocity);
-            Animations.ColorTransition(bulb, blue, green, delay, luminocity);
-            Animations.ColorTransition(bulb, green, red, delay, luminocity);
+            ColorTransition(bulb, red, blue, delay, resolution, luminocity);
+            ColorTransition(bulb, blue, green, delay, resolution, luminocity);
+            ColorTransition(bulb, green, red, delay, resolution, luminocity);
 
-            return bulb.Color;
+            return bulb.Colors;
 
         }
 
@@ -187,7 +187,7 @@ namespace MagicHomeConsoleApp
                 {
                     Thread.Sleep(20);
                     bulb.SetColorAndWhiteLevel(SetLuminocity(color, LuminocityClamp(endLuminocity)));
-                    return bulb.Color;
+                    return bulb.Colors;
                 }
 
                 bulb.SetColorAndWhiteLevel(SetLuminocity(color, LuminocityClamp(currentLuminocity)));

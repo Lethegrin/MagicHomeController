@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MagicHomeConsoleApp
+namespace MagicHomeController
 {
 
     /*
@@ -141,7 +141,8 @@ namespace MagicHomeConsoleApp
                     }
                 
             }
-            return m_discoveredBulbs;
+   
+                return m_discoveredBulbs;
         }
         public void CancelScan()
         {

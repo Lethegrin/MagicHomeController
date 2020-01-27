@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace MagicHomeConsoleApp
+namespace MagicHomeController
 {
     class RGBWWBulb : Bulb
     {
@@ -9,11 +9,11 @@ namespace MagicHomeConsoleApp
 
         public override void SetColorAndWhiteLevel(byte r = 0, byte g = 0, byte b = 0, byte w = 0, byte c = 0, bool persistance = false)
         {
-            Color.Red = r;
-            Color.Green = g;
-            Color.Blue = b;
-            Color.WarmWhite = w;
-            Color.ColdWhite = c;
+            Colors.Red = r;
+            Colors.Green = g;
+            Colors.Blue = b;
+            Colors.WarmWhite = w;
+            Colors.ColdWhite = c;
 
             if (r > 0 || g > 0 || b > 0)
                 UpdateStateColor();
@@ -23,11 +23,11 @@ namespace MagicHomeConsoleApp
 
         public override void SetColorAndWhiteLevel(Colors color, bool persistance = false)
         {
-            Color.Red = color.Red;
-            Color.Green = color.Green;
-            Color.Blue = color.Blue;
-            Color.WarmWhite = color.WarmWhite;
-            Color.ColdWhite = color.ColdWhite;
+            Colors.Red = color.Red;
+            Colors.Green = color.Green;
+            Colors.Blue = color.Blue;
+            Colors.WarmWhite = color.WarmWhite;
+            Colors.ColdWhite = color.ColdWhite;
 
             if (color.Red > 0 || color.Green > 0 || color.Blue > 0)
                 UpdateStateColor();

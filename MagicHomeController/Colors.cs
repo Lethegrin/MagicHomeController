@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MagicHomeConsoleApp
+namespace MagicHomeController
 {
 
     public class Colors

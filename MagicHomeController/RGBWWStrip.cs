@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace MagicHomeConsoleApp
+namespace MagicHomeController
 {
     class RGBWWStrip : Bulb
     {
